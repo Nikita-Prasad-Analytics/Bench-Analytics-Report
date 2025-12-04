@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bench Analytics Dashboard</title>
+    <link rel="icon" type="image/png" href="/static/N.png">
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-teal: #0d4f5c;
+            --secondary-teal: #1a7a8a;
+            --accent-red: #dc0032;
+            --glass-bg: rgba(31, 41, 55, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-white: #ffffff;
+            --text-light: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('/static/background-image.jpg') center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            color: var(--text-white);
+            overflow-x: hidden;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(20px);
+            margin: 2% auto;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1400px;
+            height: 85vh;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .modal-close {
+            color: var(--text-light);
+            float: right;
+            font-size: 35px;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-red);
+        }
+
+        .modal-header {
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: white;
+            font-size: 22px;
+        }
+
+        .modal-body {
+            height: calc(100% - 80px);
+            overflow: auto;
+        }
+
+        /* Date Filter Styles */
+        .filter-container {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: var(--text-white);
+            font-weight: 600;
+        }
+
+        .filter-input {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .filter-input:focus {
+            border-color: var(--accent-red);
+            background: rgba(17, 24, 39, 0.8);
+        }
+
+        .filter-btn {
+            background: var(--accent-red);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .filter-btn:hover {
+            background: #b8002a;
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-left img {
+            height: 35px;
+        }
+
+        .nav-left h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .welcome-text {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: var(--accent-red);
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .logout-btn:hover {
+            background: #b8002a;
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 59px;
+            bottom: 0;
+            width: 200px;
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            padding: 15px 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            z-index: 999;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent-red);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .sidebar-toggle:hover {
+            background: #b8002a;
+        }
+
+        .sidebar-toggle i {
+            font-size: 14px;
+        }
+
+        .sidebar-items {
+            margin-top: 50px;
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-light);
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .sidebar-item.active {
+            background: rgba(220, 0, 50, 0.2);
+            border-left: 3px solid var(--accent-red);
+            color: white;
+        }
+
+        .sidebar-item i {
+            font-size: 18px;
+            min-width: 18px;
+        }
+
+        .sidebar.collapsed .sidebar-item span {
+            opacity: 0;
+            width: 0;
+        }
+
+        .sidebar-item span {
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 200px;
+            margin-top: 59px;
+            padding: 15px;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: calc(100vh - 59px);
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed + .main-content {
+            margin-left: 60px;
+        }
+
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card h2 {
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: white;
+        }
+
+        .glass-card h3 {
+            margin-bottom: 8px;
+            font-size: 15px;
+            color: var(--text-light);
+        }
+
+        /* Home Page - Compact */
+        .hero-section {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .hero-section h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .hero-section p {
+            font-size: 16px;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        .quick-start {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-start-item {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+
+        .quick-start-item i {
+            font-size: 35px;
+            color: var(--accent-red);
+            margin-bottom: 10px;
+        }
+
+        .quick-start-item h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .quick-start-item p {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* File Upload */
+        .upload-zone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            background: rgba(17, 24, 39, 0.3);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-red);
+            background: rgba(220, 0, 50, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent-red);
+            background: rgba(220, 0, 50, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-zone i {
+            font-size: 40px;
+            color: var(--accent-red);
+            margin-bottom: 12px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: var(--accent-red);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .upload-btn:hover {
+            background: #b8002a;
+            transform: translateY(-2px);
+        }
+
+        /* Dataset Table */
+        .dataset-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .dataset-table th,
+        .dataset-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .dataset-table th {
+            background: rgba(17, 24, 39, 0.5);
+            font-weight: 600;
+        }
+
+        .dataset-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .dataset-table input[type="radio"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .load-btn {
+            background: var(--accent-red);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .load-btn:hover {
+            background: #b8002a;
+        }
+
+        .load-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .kpi-card {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .kpi-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .kpi-icon.blue {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .kpi-icon.green {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .kpi-icon.purple {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+        }
+
+        .kpi-icon.orange {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+        }
+
+        .kpi-content {
+            flex: 1;
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .kpi-trend {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        /* Dashboard Grid - Single Screen Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .chart-container {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px;
+            height: 280px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .chart-container::after {
+            content: 'Click to expand';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(220, 0, 50, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .chart-container:hover::after {
+            opacity: 1;
+        }
+
+        .chart-container.tall {
+            height: 350px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .half-width {
+            grid-column: span 2;
+        }
+
+        /* Recommendations */
+        .recommendation-item {
+            background: rgba(17, 24, 39, 0.4);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--accent-red);
+            font-size: 12px;
+        }
+
+        .recommendation-item strong {
+            color: var(--accent-red);
+        }
+
+        /* Table for availability */
+        .availability-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            max-height: 230px;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .availability-table thead {
+            position: sticky;
+            top: 0;
+            background: rgba(17, 24, 39, 0.8);
+        }
+
+        .availability-table th,
+        .availability-table td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .availability-table tbody {
+            display: block;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .availability-table tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 75px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            min-width: 280px;
+            max-width: 350px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: all;
+            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        .toast.removing {
+            animation: slideOutRight 0.3s ease-in forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .toast-close:hover {
+            color: white;
+        }
+
+        .toast.success {
+            border-left: 4px solid #2ed573;
+        }
+
+        .toast.success .toast-icon {
+            color: #2ed573;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ff4d6d;
+        }
+
+        .toast.error .toast-icon {
+            color: #ff4d6d;
+        }
+
+        .toast.info {
+            border-left: 4px solid #4d94ff;
+        }
+
+        .toast.info .toast-icon {
+            color: #4d94ff;
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            animation: progress 2s linear forwards;
+        }
+
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 200px;
+            right: 0;
+            text-align: center;
+            padding: 15px;
+            color: var(--text-light);
+            font-size: 11px;
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            transition: left 0.3s;
+            z-index: 998;
+        }
+
+        .sidebar.collapsed ~ .main-content .footer {
+            left: 70px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid var(--accent-red);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .sidebar .sidebar-item span {
+                opacity: 0;
+                width: 0;
+            }
+            
+            .main-content {
+                margin-left: 60px;
+            }
+            
+            .footer {
+                left: 70px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Chart Modal -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeChartModal()">&times;</span>
+                <h2 id="modalChartTitle">Chart View</h2>
+            </div>
+            <div class="modal-body">
+                <div id="modalChartContainer" style="width: 100%; height: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <img src="/static/N.png" alt="Invenio Logo">
+            <h1>Invenio Analytics</h1>
+        </div>
+        <div class="nav-right">
+            <span class="welcome-text">Welcome, <strong id="username">User</strong></span>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars" id="toggle-icon"></i>
+        </button>
+        <div class="sidebar-items">
+            <div class="sidebar-item active" data-page="home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </div>
+            <div class="sidebar-item" data-page="files">
+                <i class="fas fa-folder-open"></i>
+                <span>Files</span>
+            </div>
+            <div class="sidebar-item" data-page="analyzer">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <section class="page-section active" id="home">
+            <div class="hero-section">
+                <h1>Invenio Analytics</h1>
+                <p>Data-Driven Workforce Insights & Strategic Resource Management</p>
+            </div>
+
+            <div class="glass-card">
+                <h2>Quick Start Guide</h2>
+                <div class="quick-start">
+                    <div class="quick-start-item">
+                        <i class="fas fa-database"></i>
+                        <h3>Connect Data Sources</h3>
+                        <p>Navigate to the Files tab to upload or load available datasets.</p>
+                    </div>
+                    <div class="quick-start-item">
+                        <i class="fas fa-chart-pie"></i>
+                        <h3>Get Insights</h3>
+                        <p>View instant visualizations, charts, and analytics powered by AI.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Files Page -->
+        <section class="page-section" id="files">
+            <div class="glass-card">
+                <h2><i class="fas fa-upload"></i> Upload Dataset</h2>
+                <div class="upload-zone" id="uploadZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drag & Drop Excel File Here</h3>
+                    <p>or</p>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Browse Files
+                    </button>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+                    <p style="margin-top: 12px; font-size: 11px; color: rgba(255,255,255,0.6);">
+                        Maximum file size: 25 MB
+                    </p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2><i class="fas fa-database"></i> Available Datasets</h2>
+                <table class="dataset-table" id="datasetTable">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Filename</th>
+                            <th>Size</th>
+                            <th>Date Added</th>
+                        </tr>
+                    </thead>
+                    <tbody id="datasetTableBody">
+                        <tr><td colspan="4" style="text-align: center;">Loading datasets...</td></tr>
+                    </tbody>
+                </table>
+                <button class="load-btn" id="loadBtn" onclick="loadSelectedDataset()" disabled>
+                    <i class="fas fa-play"></i> Load Selected File
+                </button>
+            </div>
+        </section>
+
+        <!-- Data Analyzer Page -->
+        <section class="page-section" id="analyzer">
+            <!-- Date Filter -->
+            <div class="filter-container">
+                <span class="filter-label"><i class="fas fa-filter"></i> Date Filter:</span>
+                <input type="date" id="startDate" class="filter-input" placeholder="Start Date">
+                <span style="color: rgba(255,255,255,0.6);">to</span>
+                <input type="date" id="endDate" class="filter-input" placeholder="End Date">
+                <button class="filter-btn" onclick="applyDateFilter()">
+                    <i class="fas fa-search"></i> Apply Filter
+                </button>
+                <button class="filter-btn secondary" onclick="clearDateFilter()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid" id="kpiGrid">
+                <div class="kpi-card">
+                    <div class="kpi-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Total Employees</div>
+                        <div class="kpi-value" id="kpi-total">-</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon orange">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Under-Skilled</div>
+                        <div class="kpi-value" id="kpi-underskilled">-</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon green">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Billable Ratio</div>
+                        <div class="kpi-value" id="kpi-billable">-</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon purple">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-label">Utilization %</div>
+                        <div class="kpi-value" id="kpi-utilization">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 1: Location, Grade, Skills Treemap -->
+            <div class="dashboard-grid">
+                <div class="chart-container" onclick="expandChart('locationChart', 'Location-wise Employees')">
+                    <div id="locationChart"></div>
+                </div>
+                <div class="chart-container" onclick="expandChart('gradeChart', 'Grade Distribution')">
+                    <div id="gradeChart"></div>
+                </div>
+                <div class="chart-container" onclick="expandChart('skillTreemapChart', 'Skill Distribution')">
+                    <div id="skillTreemapChart"></div>
+                </div>
+            </div>
+
+            <!-- Row 2: Bench Skills, Timeline, Status -->
+            <div class="dashboard-grid">
+                <div class="chart-container" onclick="expandChart('benchSkillsChart', 'Available Skills on Bench')">
+                    <div id="benchSkillsChart"></div>
+                </div>
+                <div class="chart-container" onclick="expandChart('timelineChart', 'Bench Trend Over Time')">
+                    <div id="timelineChart"></div>
+                </div>
+                <div class="chart-container" onclick="expandChart('statusChart', 'Status Distribution')">
+                    <div id="statusChart"></div>
+                </div>
+            </div>
+
+            <!-- Row 3: Bench Reasons -->
+            <div class="dashboard-grid">
+                <div class="chart-container" onclick="expandChart('benchReasonsChart', 'Bench Reasons Distribution')">
+                    <div id="benchReasonsChart"></div>
+                </div>
+                <div class="glass-card" style="margin: 0; height: 280px; overflow-y: auto; grid-column: span 2;">
+                    <h3><i class="fas fa-lightbulb"></i> Action Items & Recommendations</h3>
+                    <div id="recommendationsContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 8px; font-size: 12px;">Loading recommendations...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Need help? Contact <a href="mailto:admin@invenio-solutions.com">admin@invenio-solutions.com</a><br>
+            2025 Invenio
+        </footer>
+    </main>
+
+    <script>
+        // Global variables
+        let currentDataset = null;
+        let currentDateFilter = { start: null, end: null };
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '\u2714',
+                error: '\u2715',
+                info: '\u2139'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">${message}</div>
+                <button class="toast-close" onclick="removeToast(this.parentElement)">\u00d7</button>
+                <div class="toast-progress"></div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                removeToast(toast);
+            }, 2000);
+        }
+
+        function removeToast(toast) {
+            toast.classList.add('removing');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
+        // Modal functions
+        function expandChart(chartId, title) {
+            const modal = document.getElementById('chartModal');
+            const modalTitle = document.getElementById('modalChartTitle');
+            const modalContainer = document.getElementById('modalChartContainer');
+            
+            modalTitle.textContent = title;
+            modal.classList.add('active');
+            
+            const originalChart = document.getElementById(chartId);
+            if (originalChart) {
+                const data = originalChart.data;
+                const layout = JSON.parse(JSON.stringify(originalChart.layout || {}));
+                
+                layout.height = window.innerHeight * 0.75;
+                layout.autosize = true;
+                
+                Plotly.newPlot('modalChartContainer', data, layout, {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToAdd: ['hoverclosest', 'hovercompare'],
+                    displaylogo: false
+                });
+            }
+        }
+
+        function closeChartModal() {
+            const modal = document.getElementById('chartModal');
+            modal.classList.remove('active');
+            Plotly.purge('modalChartContainer');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('chartModal');
+            if (event.target === modal) {
+                closeChartModal();
+            }
+        }
+
+        // Date Filter Functions
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                showToast('Please select both start and end dates', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showToast('Start date must be before end date', 'error');
+                return;
+            }
+            
+            currentDateFilter = { start: startDate, end: endDate };
+            showToast('Applying date filter...', 'info');
+            loadAllCharts();
+        }
+
+        function clearDateFilter() {
+            currentDateFilter = { start: null, end: null };
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            showToast('Filter cleared', 'success');
+            loadAllCharts();
+        }
+
+        // Build URL with date filter
+        function buildFilteredUrl(baseUrl) {
+            if (currentDateFilter.start && currentDateFilter.end) {
+                const separator = baseUrl.includes('?') ? '&' : '?';
+                return `${baseUrl}${separator}start_date=${currentDateFilter.start}&end_date=${currentDateFilter.end}`;
+            }
+            return baseUrl;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsername();
+            loadDatasets();
+            setupSidebarNavigation();
+            setupDragDrop();
+        });
+
+        // Load username
+        function loadUsername() {
+            fetch('/api/auth/session')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.username) {
+                        const username = data.username.split(' ').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                        ).join(' ');
+                        document.getElementById('username').textContent = username;
+                    }
+                })
+                .catch(err => console.error('Session error:', err));
+        }
+
+        // Logout
+        function logout() {
+            fetch('/api/auth/logout', { method: 'POST' })
+                .then(() => window.location.href = '/')
+                .catch(err => console.error('Logout error:', err));
+        }
+
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Sidebar navigation
+        function setupSidebarNavigation() {
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.getAttribute('data-page');
+                    showPage(page);
+                    
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        function showPage(pageName) {
+            document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageName).classList.add('active');
+            
+            if (pageName === 'analyzer' && currentDataset) {
+                loadAllCharts();
+            }
+        }
+
+        // Drag and Drop
+        function setupDragDrop() {
+            const zone = document.getElementById('uploadZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.remove('dragover'), false);
+            });
+
+            zone.addEventListener('drop', handleDrop, false);
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFileUpload({ target: { files } });
+            }
+        }
+
+        // File upload
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const maxSize = 25 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showToast('File size exceeds 25 MB limit', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showToast('Uploading file...', 'info');
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast('File uploaded successfully!', 'success');
+                    loadDatasets();
+                } else {
+                    showToast(data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showToast('Connection error. Please try again.', 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        // Load datasets
+        async function loadDatasets() {
+            try {
+                const response = await fetch('/api/dataset/list');
+                const data = await response.json();
+
+                const tbody = document.getElementById('datasetTableBody');
+                if (data.datasets && data.datasets.length > 0) {
+                    tbody.innerHTML = data.datasets.map(dataset => `
+                        <tr>
+                            <td><input type="radio" name="dataset" value="${dataset.filename}" onchange="enableLoadButton()"></td>
+                            <td>${dataset.filename}</td>
+                            <td>${dataset.size}</td>
+                            <td>${dataset.date}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No datasets available</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading datasets:', error);
+            }
+        }
+
+        function enableLoadButton() {
+            document.getElementById('loadBtn').disabled = false;
+        }
+
+        // Load selected dataset
+        async function loadSelectedDataset() {
+            const selected = document.querySelector('input[name="dataset"]:checked');
+            if (!selected) return;
+
+            const filename = selected.value;
+
+            try {
+                showToast('Loading dataset...', 'info');
+
+                const response = await fetch(`/api/dataset/load/${filename}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentDataset = filename;
+                    showToast('Dataset loaded successfully!', 'success');
+                    
+                    setTimeout(() => {
+                        showPage('analyzer');
+                        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                        document.querySelector('[data-page="analyzer"]').classList.add('active');
+                        loadAllCharts();
+                    }, 500);
+                } else {
+                    showToast(data.error || 'Failed to load dataset', 'error');
+                }
+            } catch (error) {
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Load all charts and KPIs
+        function loadAllCharts() {
+            loadKPIs();
+            loadLocationChart();
+            loadGradeChart();
+            loadSkillTreemap();
+            loadBenchSkillsChart();
+            loadTimelineChart();
+            loadStatusChart();
+            loadBenchReasonsChart();
+            loadRecommendations();
+        }
+
+        // Load KPIs
+        async function loadKPIs() {
+            try {
+                const url = buildFilteredUrl('/api/bench/kpis');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                document.getElementById('kpi-total').textContent = data.num_employees;
+                document.getElementById('kpi-underskilled').textContent = data.under_skilled;
+                document.getElementById('kpi-billable').textContent = data.billable_ratio + '%';
+                document.getElementById('kpi-utilization').textContent = data.utilization + '%';
+            } catch (error) {
+                console.error('Error loading KPIs:', error);
+            }
+        }
+
+        // Chart functions
+        async function loadLocationChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/location');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Sort data in increasing order
+                const sortedIndices = data.counts
+                    .map((count, index) => ({ count, index }))
+                    .sort((a, b) => a.count - b.count)
+                    .map(item => item.index);
+                
+                const sortedLocations = sortedIndices.map(i => data.locations[i]);
+                const sortedCounts = sortedIndices.map(i => data.counts[i]);
+
+                // Color logic: red for lowest, green for highest, grey for others
+                const colors = sortedCounts.map((count, idx) => {
+                    if (idx === 0) return '#dc0032'; // Red for lowest
+                    if (idx === sortedCounts.length - 1) return '#00c853'; // Green for highest
+                    return '#808080'; // Grey for others
+                });
+
+                const trace = {
+                    x: sortedLocations,
+                    y: sortedCounts,
+                    type: 'bar',
+                    marker: { 
+                        color: colors
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Location-wise Employees', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)', 
+                        tickangle: -45,
+                        automargin: true
+                    },
+                    yaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    margin: { t: 35, b: 80, l: 40, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('locationChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading location chart:', error);
+            }
+        }
+
+        async function loadGradeChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/grade');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Find max and min percentages
+                const total = data.counts.reduce((sum, count) => sum + count, 0);
+                const percentages = data.counts.map(count => (count / total) * 100);
+                const maxPercent = Math.max(...percentages);
+                const minPercent = Math.min(...percentages);
+
+                // Color logic: green for max, red for min, grey for others
+                const colors = percentages.map(percent => {
+                    if (percent === maxPercent) return '#00c853'; // Green for max
+                    if (percent === minPercent) return '#dc0032'; // Red for min
+                    return '#808080'; // Grey for others
+                });
+
+                const trace = {
+                    labels: data.grades,
+                    values: data.counts,
+                    type: 'pie',
+                    hole: 0.4,
+                    marker: {
+                        colors: colors,
+                        line: {
+                            color: '#ffffff',
+                            width: 2
+                        }
+                    },
+                    textinfo: 'label+percent',
+                    textfont: { size: 10 }
+                };
+
+                const layout = {
+                    title: { text: 'Grade Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    showlegend: false,
+                    height: 260
+                };
+
+                Plotly.newPlot('gradeChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading grade chart:', error);
+            }
+        }
+
+        async function loadSkillTreemap() {
+            try {
+                const url = buildFilteredUrl('/api/bench/skills');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Find max and min values
+                const maxValue = Math.max(...data.counts);
+                const minValue = Math.min(...data.counts);
+
+                // Color logic: green for max, red for min, grey for others
+                const colors = data.counts.map(count => {
+                    if (count === maxValue) return '#00c853'; // Green for max
+                    if (count === minValue) return '#dc0032'; // Red for min
+                    return '#808080'; // Grey for others
+                });
+
+                const trace = {
+                    type: 'treemap',
+                    labels: data.skills,
+                    parents: Array(data.skills.length).fill(''),
+                    values: data.counts,
+                    textinfo: 'label+value',
+                    textfont: { size: 10 },
+                    marker: {
+                        colors: colors,
+                        line: {
+                            color: '#ffffff',
+                            width: 2
+                        }
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Skill Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('skillTreemapChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading skill treemap:', error);
+            }
+        }
+
+
+        async function loadBenchSkillsChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/bench_skills');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Find max and min values
+                const maxValue = Math.max(...data.counts);
+                const minValue = Math.min(...data.counts);
+
+                // Color logic: green for lowest, red for highest, grey for others
+                const colors = data.counts.map(count => {
+                    if (count === minValue) return '#00c853'; // Green for lowest
+                    if (count === maxValue) return '#dc0032'; // Red for highest
+                    return '#808080'; // Grey for others
+                });
+
+                const trace = {
+                    x: data.counts,
+                    y: data.skills,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { 
+                        color: colors
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Available Skills on Bench', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    yaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    margin: { t: 35, b: 40, l: 120, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('benchSkillsChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading bench skills chart:', error);
+            }
+        }
+
+
+        async function loadTimelineChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/timeline?period=M');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const trace = {
+                    x: data.dates,
+                    y: data.counts,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { 
+                        color: '#dc0032', 
+                        width: 2,
+                        shape: 'spline'
+                    },
+                    marker: { 
+                        size: 6, 
+                        color: data.counts,
+                        colorscale: 'Viridis',
+                        reversescale: true,
+                        showscale: false
+                    },
+                    fill: 'tozeroy',
+                    fillcolor: 'rgba(220, 0, 50, 0.1)'
+                };
+
+                const layout = {
+                    title: { text: 'Bench Trend Over Time', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    yaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    margin: { t: 35, b: 50, l: 40, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('timelineChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading timeline chart:', error);
+            }
+        }
+
+
+        async function loadStatusChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/status');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Find max and min values
+                const maxValue = Math.max(...data.counts);
+                const minValue = Math.min(...data.counts);
+
+                // Color logic: green for max, red for min
+                const colors = data.counts.map(count => {
+                    if (count === maxValue) return '#00c853'; // Green for max
+                    if (count === minValue) return '#dc0032'; // Red for min
+                    return '#808080'; // Grey (if there are more than 2)
+                });
+
+                const trace = {
+                    labels: data.statuses,
+                    values: data.counts,
+                    type: 'pie',
+                    marker: {
+                        colors: colors
+                    },
+                    textinfo: 'label+percent',
+                    textfont: { size: 10 }
+                };
+
+                const layout = {
+                    title: { text: 'Status Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    showlegend: false,
+                    height: 260
+                };
+
+                Plotly.newPlot('statusChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading status chart:', error);
+            }
+        }
+
+
+        async function loadBenchReasonsChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/reasons');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error || data.reasons.length === 0) {
+                    document.getElementById('benchReasonsChart').innerHTML = 
+                        '<p style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6); font-size: 12px;">Reason column not available in dataset</p>';
+                    return;
+                }
+
+                // Sort data in increasing order
+                const sortedIndices = data.counts
+                    .map((count, index) => ({ count, index }))
+                    .sort((a, b) => a.count - b.count)
+                    .map(item => item.index);
+                
+                const sortedReasons = sortedIndices.map(i => data.reasons[i]);
+                const sortedCounts = sortedIndices.map(i => data.counts[i]);
+
+                // Find max and min values
+                const maxValue = Math.max(...sortedCounts);
+                const minValue = Math.min(...sortedCounts);
+
+                // Color logic: red for max, green for min, grey for others
+                const colors = sortedCounts.map(count => {
+                    if (count === maxValue) return '#dc0032'; // Red for max
+                    if (count === minValue) return '#00c853'; // Green for min
+                    return '#808080'; // Grey for others
+                });
+
+                const trace = {
+                    x: sortedCounts,
+                    y: sortedReasons,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { 
+                        color: colors
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Bench Reasons Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    yaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    margin: { t: 35, b: 40, l: 150, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('benchReasonsChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading bench reasons chart:', error);
+                document.getElementById('benchReasonsChart').innerHTML = 
+                    '<p style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6); font-size: 12px;">Unable to load bench reasons</p>';
+            }
+        }
+
+
+       /* async function loadLocationChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/location');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const trace = {
+                    x: data.locations,
+                    y: data.counts,
+                    type: 'bar',
+                    marker: { 
+                        color: data.counts,
+                        colorscale: 'Viridis',
+                        showscale: false
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Location-wise Employees', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)', 
+                        tickangle: -45,
+                        automargin: true
+                    },
+                    yaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    margin: { t: 35, b: 80, l: 40, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('locationChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading location chart:', error);
+            }
+        }
+
+        async function loadGradeChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/grade');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Tab20 color palette
+                const tab20Colors = [
+                    '#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c',
+                    '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5',
+                    '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f',
+                    '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5'
+                ];
+
+                const trace = {
+                    labels: data.grades,
+                    values: data.counts,
+                    type: 'pie',
+                    hole: 0.4,
+                    marker: {
+                        colors: data.grades.map((_, i) => tab20Colors[i % tab20Colors.length])
+                    },
+                    textinfo: 'label+percent',
+                    textfont: { size: 10 }
+                };
+
+                const layout = {
+                    title: { text: 'Grade Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    showlegend: false,
+                    height: 260
+                };
+
+                Plotly.newPlot('gradeChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading grade chart:', error);
+            }
+        }
+
+        async function loadSkillTreemap() {
+            try {
+                const url = buildFilteredUrl('/api/bench/skills');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const trace = {
+                    type: 'treemap',
+                    labels: data.skills,
+                    parents: Array(data.skills.length).fill(''),
+                    values: data.counts,
+                    textinfo: 'label+value',
+                    textfont: { size: 10 },
+                    marker: {
+                        colorscale: 'Viridis',
+                        colors: data.counts,
+                        showscale: false
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Skill Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('skillTreemapChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading skill treemap:', error);
+            }
+        }
+
+        async function loadBenchSkillsChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/bench_skills');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const trace = {
+                    x: data.counts,
+                    y: data.skills,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { 
+                        color: data.counts,
+                        colorscale: 'Viridis',
+                        reversescale: true,
+                        showscale: false
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Available Skills on Bench', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    yaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    margin: { t: 35, b: 40, l: 120, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('benchSkillsChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading bench skills chart:', error);
+            }
+        }
+
+        async function loadTimelineChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/timeline?period=M');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const trace = {
+                    x: data.dates,
+                    y: data.counts,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { 
+                        color: '#dc0032', 
+                        width: 2,
+                        shape: 'spline'
+                    },
+                    marker: { 
+                        size: 6, 
+                        color: data.counts,
+                        colorscale: 'Viridis',
+                        reversescale: true,
+                        showscale: false
+                    },
+                    fill: 'tozeroy',
+                    fillcolor: 'rgba(220, 0, 50, 0.1)'
+                };
+
+                const layout = {
+                    title: { text: 'Bench Trend Over Time', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    yaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    margin: { t: 35, b: 50, l: 40, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('timelineChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading timeline chart:', error);
+            }
+        }
+
+        async function loadStatusChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/status');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Tab20 colors for status
+                const tab20Colors = ['#1f77b4', '#ff7f0e'];
+
+                const trace = {
+                    labels: data.statuses,
+                    values: data.counts,
+                    type: 'pie',
+                    marker: {
+                        colors: data.statuses.map((_, i) => tab20Colors[i % tab20Colors.length])
+                    },
+                    textinfo: 'label+percent',
+                    textfont: { size: 10 }
+                };
+
+                const layout = {
+                    title: { text: 'Status Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    margin: { t: 35, b: 10, l: 10, r: 10 },
+                    showlegend: false,
+                    height: 260
+                };
+
+                Plotly.newPlot('statusChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading status chart:', error);
+            }
+        }
+
+        async function loadBenchReasonsChart() {
+            try {
+                const url = buildFilteredUrl('/api/bench/reasons');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.error || data.reasons.length === 0) {
+                    document.getElementById('benchReasonsChart').innerHTML = 
+                        '<p style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6); font-size: 12px;">Reason column not available in dataset</p>';
+                    return;
+                }
+
+                const trace = {
+                    x: data.counts,
+                    y: data.reasons,
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { 
+                        color: data.counts,
+                        colorscale: 'Viridis',
+                        showscale: false
+                    }
+                };
+
+                const layout = {
+                    title: { text: 'Bench Reasons Distribution', font: { size: 13, color: '#ffffff' } },
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#ffffff', size: 10 },
+                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
+                    yaxis: { 
+                        gridcolor: 'rgba(255,255,255,0.1)',
+                        automargin: true
+                    },
+                    margin: { t: 35, b: 40, l: 150, r: 10 },
+                    height: 260
+                };
+
+                Plotly.newPlot('benchReasonsChart', [trace], layout, {responsive: true, displayModeBar: false});
+            } catch (error) {
+                console.error('Error loading bench reasons chart:', error);
+                document.getElementById('benchReasonsChart').innerHTML = 
+                    '<p style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6); font-size: 12px;">Unable to load bench reasons</p>';
+            }
+        } */
+
+        async function loadRecommendations() {
+            try {
+                const url = buildFilteredUrl('/api/bench/recommendations');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const container = document.getElementById('recommendationsContainer');
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    container.innerHTML = data.recommendations.map(rec => `
+                        <div class="recommendation-item">
+                            <strong>${rec.priority}:</strong> ${rec.message}
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="font-size: 12px;">No recommendations available at this time.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+                document.getElementById('recommendationsContainer').innerHTML = 
+                    '<p style="font-size: 12px; color: #ff4d6d;">Error loading recommendations.</p>';
+            }
+        } 
+    </script>
+</body>
+</html>
